@@ -3,7 +3,7 @@ import {MovieCard} from "@/components/movieCard";
 import DropdownForm from "@/components/dropDown";
 
 
-export const movieRatings = [
+const movieRatings = [
   {
     title: "Spider Man - Across the Spiderverse",
     rating: 10
