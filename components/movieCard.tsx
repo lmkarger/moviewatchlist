@@ -11,7 +11,6 @@ export const MovieCard = ({
   }[];
   className?: string;
 }) => {
-  let [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
     <div
@@ -23,8 +22,6 @@ export const MovieCard = ({
       {items.map((item, idx) => (
         <a
           className="relative group  block p-2 h-full w-full"
-          onMouseEnter={() => setHoveredIndex(idx)}
-          onMouseLeave={() => setHoveredIndex(null)}
           key={idx}
         >
           <Card>
