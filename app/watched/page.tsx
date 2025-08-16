@@ -1,7 +1,7 @@
 'use client'
 import {MovieCard} from "@/components/movieCard";
 
-export const movieRatings = [
+const movieRatings = [
   {
     title: "Spider Man - Across the Spiderverse",
     rating: 10
