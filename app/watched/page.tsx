@@ -1,6 +1,4 @@
 'use client'
-
-import Image from "next/image";
 import {MovieCard} from "@/components/movieCard";
 
 export const movieRatings = [

@@ -1,5 +1,4 @@
 'use client'
-import Image from "next/image";
 import {MovieCard} from "@/components/movieCard";
 import DropdownForm from "@/components/dropDown";
 
