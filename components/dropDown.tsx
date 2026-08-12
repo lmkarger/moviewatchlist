@@ -1,8 +1,17 @@
 'use state';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, FormEvent } from 'react';
+import { supabase } from '@/lib/supabaseClient'
 
-export default function DropdownForm() {
+export const DropdownForm = ({
+  Rated,
+  onMovieAdded,
+}: {
+  Rated: boolean;
+  onMovieAdded: () => void;
+}
+
+  ) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +35,31 @@ export default function DropdownForm() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
+
+  const [Name, setName] = useState("");
+  const [Rating, setRating] = useState<number | "">(-1);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault(); // 🚫 prevents page reload
+
+    console.log("Form submitted:", { Name, Rating });
+    if (Rated){
+      await supabase.from("moviesWatched").insert([
+        { Name, Rating }
+      ]);
+    }
+    else {
+      await supabase.from("movieWatchlist").insert([
+        { Name, Rating }
+      ]);
+    }
+
+    // Reset form
+    setName("");
+    setRating("");
+    onMovieAdded();
+  };
+
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
       {/* Toggle Button */}
@@ -43,19 +77,23 @@ export default function DropdownForm() {
           ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
         `}
       >
-        <form className="space-y-3 z-10">
+        <form onSubmit={handleSubmit} className="space-y-3 z-10">
           <input
             type="text"
             placeholder="Name..."
+            value={Name}
+            onChange={(e) => setName(e.target.value)}
             className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3]"
           />
-          <input
+          {Rated && <input
             type="number"
             min="0"
             max="10"
+            value={Rating}
+            onChange={(e) => setRating(Number(e.target.value))}
             placeholder="Rating..."
             className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3]"
-          />
+          />}
           <button
             type="submit"
             className="bg-green-500 text-white px-4 py-2 rounded w-full"
