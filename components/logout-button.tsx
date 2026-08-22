@@ -15,7 +15,7 @@ export function LogoutButton() {
 
   return (
     <button
-      className="p-3 my-5 mx-15 text-4xl hover:underline text-right bg-white text-black border-black border-2 rounded-lg"
+      className="p-3 my-5 mx-15 text-4xl hover:underline text-right text-white"
       onClick={logout}
     >
       Logout

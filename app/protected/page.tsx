@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Website } from "./website";
+import Website from "@/components/website";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProtectedPage() {
