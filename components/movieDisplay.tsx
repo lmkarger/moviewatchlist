@@ -5,11 +5,12 @@ import { PopupForm } from "@/components/popupForm";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type Review = {
-  //read in movie data from supabase.
+type MovieCardProp = {
   id: number;
   Name: string;
   Rating: number;
+  Review: string;
+  Watched: boolean;
 };
 
 type MovieListProps = {
@@ -18,20 +19,52 @@ type MovieListProps = {
 
 export const MovieDisplay = ({ watched }: MovieListProps) => {
   const supabase = createClient();
-  const [data, setData] = useState<Review[]>([]);
+  const [data, setData] = useState<MovieCardProp[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0); //refresh movie cards when a new movie is added or removed
   const [popup, setPopup] = useState(false); //popup starts at closed
-  async function fetchData() {
-    const { data, error } = await supabase.from("MovieReview").select();
-    if (error) console.log(error);
-    else {
-      console.log(data);
-      setData(data || [null]);
-    }
-  }
 
+  const handleMovieCardChange = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
+  async function findMovieName(movieId: number): Promise<string> {
+    const { data: movie, error: movieError } = await supabase
+      .from("Movie")
+      .select("Name")
+      .eq("id", movieId)
+      .single();
+    if (movieError) {
+      console.error(movieError);
+      return "";
+    }
+    return movie?.Name || "";
+  }
   useEffect(() => {
-    fetchData();
-  }, []);
+    async function loadData() {
+      const { data: rawData, error } = await supabase
+        .from("MovieReview")
+        .select("id, movie_id, Rating, Review, Watched");
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const purifiedData = await Promise.all(
+        (rawData ?? []).map(async (item) => ({
+          id: item.id,
+          Name: await findMovieName(item.movie_id),
+          Rating: item.Rating,
+          Review: item.Review,
+          Watched: item.Watched,
+        })),
+      );
+
+      setData(purifiedData);
+    }
+
+    loadData();
+  }, [refreshKey]);
 
   return (
     <div className="bg-[#1d2b3d] w-screen flex-1">
@@ -52,8 +85,13 @@ export const MovieDisplay = ({ watched }: MovieListProps) => {
           </li>
         </ul>
       </nav>
-      <PopupForm watched={watched} open={popup} setOpen={setPopup}></PopupForm>
-      <MovieCard items={data} Rated={false}></MovieCard>
+      <PopupForm
+        watched={watched}
+        open={popup}
+        setOpen={setPopup}
+        onMoviesChanged={handleMovieCardChange}
+      ></PopupForm>
+      <MovieCard items={data} watched={watched}></MovieCard>
     </div>
   );
 };

@@ -7,10 +7,12 @@ export const PopupForm = ({
   watched,
   open,
   setOpen,
+  onMoviesChanged,
 }: {
   watched: boolean;
   open: boolean;
   setOpen: (value: boolean) => void;
+  onMoviesChanged: () => void;
 }) => {
   const supabase = createClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -62,14 +64,11 @@ export const PopupForm = ({
 
     if (reviewError) {
       console.error("Error inserting review:", reviewError);
-      console.error("Code:", reviewError.code);
-      console.error("Message:", reviewError.message);
-      console.error("Details:", reviewError.details);
-      console.error("Hint:", reviewError.hint);
       return;
     }
 
     // Reset form
+    onMoviesChanged();
     setName("");
     setRating("");
     setReview("");
@@ -117,7 +116,7 @@ export const PopupForm = ({
               <textarea
                 placeholder="Review..."
                 value={Review}
-                maxLength={500}
+                maxLength={1000}
                 onChange={(e) => setReview(e.target.value)}
                 className="w-full h-32 border border-gray-300 rounded px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3] resize-none"
               />
@@ -128,7 +127,7 @@ export const PopupForm = ({
           )}
           <button
             type="submit"
-            className="bg-green-500 text-white px-4 py-2 rounded w-full"
+            className="bg-green-500 text-white px-4 py-2 rounded w-full hover:cursor-pointer"
           >
             Add Movie
           </button>

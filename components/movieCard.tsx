@@ -5,12 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const MovieCard = ({
   items: initialItems,
-  className,
-  Rated,
+  watched,
 }: {
-  items: { id: number; Name: string; Rating: number }[];
+  items: {
+    id: number;
+    Name: string;
+    Rating: number;
+    Review: string;
+    Watched: boolean;
+  }[];
   className?: string;
-  Rated: boolean;
+  watched: boolean;
 }) => {
   const supabase = createClient();
   const [deleteReady, setDeleteReady] = useState(false);
@@ -36,55 +41,61 @@ export const MovieCard = ({
     setItems((prev) => prev.filter((item) => item.id !== id));
 
     // attemps to delete from database
-    if (Rated) {
-      const { error } = await supabase
-        .from("moviesWatched")
-        .delete()
-        .eq("id", id);
-
-      if (error) {
-        console.error(error);
-      }
-    } else {
-      const { error } = await supabase
-        .from("movieWatchlist")
-        .delete()
-        .eq("id", id);
-
-      if (error) {
-        console.error(error);
-      }
+    const { data, error } = await supabase
+      .from("MovieReview")
+      .select("movie_id")
+      .eq("id", id)
+      .single();
+    if (error) {
+      console.error(error);
+      return;
+    }
+    const movieId = data.movie_id;
+    const { error: reviewDeleteError } = await supabase
+      .from("MovieReview")
+      .delete()
+      .eq("id", id);
+    if (reviewDeleteError) {
+      console.error(reviewDeleteError);
+      return;
+    }
+    const { error: movieDeleteError } = await supabase
+      .from("Movie")
+      .delete()
+      .eq("id", movieId);
+    if (movieDeleteError) {
+      console.error(movieDeleteError);
+      return;
     }
   }
 
   return (
-    <div
-      className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5  py-10",
-        className,
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5  py-10">
+      {items.map(
+        (item, id) =>
+          watched == item.Watched && (
+            <a className="relative group block p-2 h-full w-full" key={id}>
+              <Card>
+                <AnimatePresence>
+                  {deleteReady && (
+                    <motion.p
+                      onClick={() => handleDelete(item.id)}
+                      className="absolute right-2 top-2 text-right text-blue-500 text-xl hover:cursor-pointer h-5 hover:text-zinc-100"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      ✕
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+                <MovieTitle>{item.Name}</MovieTitle>
+                {watched && <MovieReview>{item.Review}</MovieReview>}
+                {watched && <MovieRating>{item.Rating}</MovieRating>}
+              </Card>
+            </a>
+          ),
       )}
-    >
-      {items.map((item, id) => (
-        <a className="relative group block p-2 h-full w-full" key={id}>
-          <Card>
-            <AnimatePresence>
-              {deleteReady && (
-                <motion.p
-                  onClick={() => handleDelete(item.id)}
-                  className="absolute right-2 top-2 text-right font-black text-xl hover:cursor-pointer h-5 hover:text-blue-500"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  X
-                </motion.p>
-              )}
-            </AnimatePresence>
-            <MovieTitle>{item.Name}</MovieTitle>
-            {Rated && <MovieRating>{item.Rating}</MovieRating>}
-          </Card>
-        </a>
-      ))}
     </div>
   );
 };
@@ -142,6 +153,24 @@ export const MovieRating = ({
       )}
     >
       {children}/10
+    </p>
+  );
+};
+export const MovieReview = ({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) => {
+  return (
+    <p
+      className={cn(
+        "w-full h-32 border text-zinc-100 border-blue-500 rounded px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3] resize-none",
+        className,
+      )}
+    >
+      {children}
     </p>
   );
 };
