@@ -22,6 +22,7 @@ export const MovieDisplay = ({ watched }: MovieListProps) => {
   const [data, setData] = useState<MovieCardProp[]>([]);
   const [refreshKey, setRefreshKey] = useState(0); //refresh movie cards when a new movie is added or removed
   const [popup, setPopup] = useState(false); //popup starts at closed
+  const [edit, setEdit] = useState(false);
 
   const handleMovieCardChange = () => {
     setRefreshKey((prev) => prev + 1);
@@ -73,7 +74,9 @@ export const MovieDisplay = ({ watched }: MovieListProps) => {
           <li
             id="add-button"
             className="bg-blue-500 text-white p-3 m-3 border-4 border-[#0a1118] text-xl hover:cursor-pointer"
-            onClick={() => setPopup(true)}
+            onClick={() =>{ 
+              setPopup(true); 
+              setEdit(false);}}
           >
             Add Movie
           </li>
@@ -83,6 +86,13 @@ export const MovieDisplay = ({ watched }: MovieListProps) => {
           >
             Remove Movie
           </li>
+                    <li
+            id="edie-button"
+            className="bg-blue-500 text-white p-3 m-3 border-4 border-[#0a1118] text-xl hover:cursor-pointer"
+            onClick={() => setEdit(true)}
+          >
+            Edit Movie Review
+          </li>
         </ul>
       </nav>
       <PopupForm
@@ -90,6 +100,7 @@ export const MovieDisplay = ({ watched }: MovieListProps) => {
         open={popup}
         setOpen={setPopup}
         onMoviesChanged={handleMovieCardChange}
+        edit={edit}
       ></PopupForm>
       <MovieCard items={data} watched={watched}></MovieCard>
     </div>

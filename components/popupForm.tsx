@@ -8,11 +8,13 @@ export const PopupForm = ({
   open,
   setOpen,
   onMoviesChanged,
+  edit,
 }: {
   watched: boolean;
   open: boolean;
   setOpen: (value: boolean) => void;
   onMoviesChanged: () => void;
+  edit: boolean;
 }) => {
   const supabase = createClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
