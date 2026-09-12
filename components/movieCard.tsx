@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 export const MovieCard = ({
   items: initialItems,
   watched,
+  setEdit,
+  setEditMovie,
+  revealPopup,
 }: {
   items: {
     id: number;
@@ -16,26 +19,45 @@ export const MovieCard = ({
   }[];
   className?: string;
   watched: boolean;
+  setEdit: (value: boolean) => void;
+  setEditMovie: (movie: {
+    id: number;
+    Name: string;
+    Rating: number;
+    Review: string;
+    Watched: boolean;
+  }) => void;
+  revealPopup: () => void;
 }) => {
   const supabase = createClient();
   const [deleteReady, setDeleteReady] = useState(false);
+  const [editReady, setEditReady] = useState(false);
   const [items, setItems] = useState(initialItems);
   //makes movies removable
   useEffect(() => {
     function prepareDelete() {
+      setEditReady(false);
       setDeleteReady(!deleteReady);
       console.log("Prepared Delete");
+    }
+    function prepareEdit() {
+      setDeleteReady(false);
+      setEditReady(!editReady);
+      console.log("Prepared Edit");
     }
     const removeButton = document.getElementById("remove-button");
     if (removeButton) {
       removeButton.addEventListener("click", prepareDelete);
+    }
+    const editButton = document.getElementById("edit-button");
+    if (editButton) {
+      editButton.addEventListener("click", prepareEdit);
     }
   });
 
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
-
   async function handleDelete(id: number) {
     // update UI
     setItems((prev) => prev.filter((item) => item.id !== id));
@@ -86,6 +108,21 @@ export const MovieCard = ({
                       exit={{ opacity: 0 }}
                     >
                       ✕
+                    </motion.p>
+                  )}
+                  {editReady && (
+                    <motion.p
+                      onClick={() => {
+                        setEditMovie(item);
+                        setEdit(true);
+                        revealPopup();
+                      }}
+                      className="absolute right-2 top-2 text-right text-blue-500 text-xl hover:cursor-pointer h-5 hover:text-zinc-100"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      Edit
                     </motion.p>
                   )}
                 </AnimatePresence>

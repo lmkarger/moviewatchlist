@@ -3,18 +3,28 @@
 import { useState, useRef, useEffect, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+type MovieCardProp = {
+  id: number;
+  Name: string;
+  Rating: number;
+  Review: string;
+  Watched: boolean;
+};
+
 export const PopupForm = ({
   watched,
   open,
   setOpen,
   onMoviesChanged,
   edit,
+  editMovie,
 }: {
   watched: boolean;
   open: boolean;
   setOpen: (value: boolean) => void;
   onMoviesChanged: () => void;
   edit: boolean;
+  editMovie: MovieCardProp | null;
 }) => {
   const supabase = createClient();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -28,53 +38,90 @@ export const PopupForm = ({
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
+  useEffect(() => {
+    // This runs whenever edit changes
+    if (edit) {
+      setName(editMovie?.Name || "");
+      setRating(editMovie?.Rating || 1);
+      setReview(editMovie?.Review || "");
+    } else {
+      setName("");
+      setRating(1);
+      setReview("");
+    }
+  }, [edit, editMovie]);
+
   const [Name, setName] = useState("");
   const [Rating, setRating] = useState<number | "">(1);
   const [Review, setReview] = useState("");
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent, edit: boolean) => {
     e.preventDefault();
     console.log("Form submitted:", { Name, Rating, Review, watched });
+    if (edit) {
+      //update the row
+      const { data: movieReview, error: movieReviewError } = await supabase
+        .from("MovieReview")
+        .update({
+          Rating,
+          Review,
+          Watched: watched,
+        })
+        .eq("id", editMovie?.id)
+        .select()
+        .single();
+      if (movieReviewError) {
+        console.error("Error updating movie review:", movieReviewError);
+        return;
+      }
+      const { error: movieError } = await supabase
+        .from("Movie")
+        .update({ Name })
+        .eq("id", movieReview?.movie_id);
 
-    // Insert movie and get the generated id
-    const { data: movie, error: movieError } = await supabase
-      .from("Movie")
-      .insert([{ Name }])
-      .select("id")
-      .single();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+      if (movieError) {
+        console.error("Error updating movie:", movieError);
+        return;
+      }
+      onMoviesChanged();
+      setName("");
+      setRating("");
+      setReview("");
+      setOpen(false);
+    } else {
+      // Insert movie and get the generated id
+      const { data: movie, error: movieError } = await supabase
+        .from("Movie")
+        .insert([{ Name }])
+        .select("id")
+        .single();
+      if (movieError) {
+        console.error("Error inserting movie:", movieError);
+        return;
+      }
 
-    console.log("Current user:", user);
-    console.log("Auth error:", error);
-    if (movieError) {
-      console.error("Error inserting movie:", movieError);
-      return;
+      // Insert review using the generated id
+      const { error: reviewError } = await supabase.from("MovieReview").insert([
+        {
+          movie_id: movie.id,
+          Rating,
+          Review,
+          Watched: watched,
+        },
+      ]);
+
+      if (reviewError) {
+        console.error("Error inserting review:", reviewError);
+        return;
+      }
+
+      // Reset form
+      onMoviesChanged();
+      setName("");
+      setRating("");
+      setReview("");
+      setOpen(false);
     }
-
-    // Insert review using the generated id
-    const { error: reviewError } = await supabase.from("MovieReview").insert([
-      {
-        movie_id: movie.id,
-        Rating,
-        Review,
-        Watched: watched,
-      },
-    ]);
-
-    if (reviewError) {
-      console.error("Error inserting review:", reviewError);
-      return;
-    }
-
-    // Reset form
-    onMoviesChanged();
-    setName("");
-    setRating("");
-    setReview("");
-    setOpen(false);
   };
 
   return (
@@ -94,13 +141,19 @@ export const PopupForm = ({
         >
           ✕
         </button>
-        <form onSubmit={handleSubmit} className="space-y-3 z-10">
+        <h2 className="text-2xl font-bold mb-4 text-white">
+          {edit ? "Edit Movie Review" : "Add Movie Review"}
+        </h2>
+        <form
+          onSubmit={(e) => handleSubmit(e, edit)}
+          className="space-y-3 z-10"
+        >
           <input
             type="text"
-            placeholder="Name..."
+            placeholder={edit ? editMovie?.Name : "Name..."}
             value={Name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3]"
+            className="w-full text-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3]"
           />
           {watched && (
             <input
@@ -109,18 +162,18 @@ export const PopupForm = ({
               max="10"
               value={Rating}
               onChange={(e) => setRating(Number(e.target.value))}
-              placeholder="Rating..."
-              className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3]"
+              placeholder={edit ? editMovie?.Rating.toString() : "Rating..."}
+              className="w-full text-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3]"
             />
           )}
           {watched && (
             <div>
               <textarea
-                placeholder="Review..."
+                placeholder={edit ? editMovie?.Review : "Review..."}
                 value={Review}
                 maxLength={1000}
                 onChange={(e) => setReview(e.target.value)}
-                className="w-full h-32 border border-gray-300 rounded px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3] resize-none"
+                className="w-full text-white h-32 border border-gray-300 rounded px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-[#D3D3D3] resize-none"
               />
               <div className="text-sm text-gray-500 text-right">
                 {Review.length}/1000
@@ -131,7 +184,7 @@ export const PopupForm = ({
             type="submit"
             className="bg-green-500 text-white px-4 py-2 rounded w-full hover:cursor-pointer"
           >
-            Add Movie
+            {edit ? "Edit Movie" : "Add Movie"}
           </button>
         </form>
       </div>
